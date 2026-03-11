@@ -1,6 +1,6 @@
 import cv2
 import mediapipe as mp
-import pickle
+import pickle   
 import numpy as np  
 from collections import Counter
 def ejecutar_traductor():
