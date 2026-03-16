@@ -20,7 +20,6 @@ def menu():
                 ca.ejecutar_capturar(letra)
             else:
                 print("X Ingrese solo un carácter.")
-            ca.ejecutar_capturar(letra)
         elif (respuesta == 3):
             en.ejecutar_entrenador()
         elif (respuesta == 0):
