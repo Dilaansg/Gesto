@@ -22,12 +22,17 @@ class TraductorLSC(ctk.CTk):
         self.historial = []
         self.frames_estabilidad = 15
         self.letra_estable = "..."
+        self.confianza_actual = 0.0      # ← NUEVO: para mostrar barra de confianza
         self.corriendo = True
         self._current_frame = None
+        self.UMBRAL = 0.70               # ← NUEVO: solo acepta predicciones >= 80%
 
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
-            static_image_mode=False, max_num_hands=1, min_detection_confidence=0.7
+            static_image_mode=False,
+            max_num_hands=1,
+            min_detection_confidence=0.8,   # ← MEJORADO: era 0.7
+            min_tracking_confidence=0.7     # ← NUEVO: filtra frames inestables
         )
         self.mp_drawing = mp.solutions.drawing_utils
         # ──────────────────────
@@ -71,7 +76,7 @@ class TraductorLSC(ctk.CTk):
             font=ctk.CTkFont(size=110, weight="bold"),
             text_color="#00CFFF"
         )
-        self.lbl_letra.pack(pady=(0, 10))
+        self.lbl_letra.pack(pady=(0, 5))
 
         # FRONT: mensaje de estado debajo de la letra
         self.lbl_estado = ctk.CTkLabel(
@@ -80,12 +85,37 @@ class TraductorLSC(ctk.CTk):
             text_color="gray",
             wraplength=240
         )
-        self.lbl_estado.pack(pady=(0, 30))
+        self.lbl_estado.pack(pady=(0, 10))
 
-        # separador visual — pueden reemplazar por una imagen o ícono
-        ctk.CTkFrame(panel, height=2, fg_color="#333333").pack(fill="x", padx=20, pady=(0, 20))
+        # ── Barra de confianza ──────────────────────
+        # FRONT: cambiar colores con progress_color y fg_color
+        ctk.CTkLabel(
+            panel, text="CONFIANZA",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color="gray"
+        ).pack()
 
-        # historial de letras — caja donde se acumulan las detectadas
+        self.barra_confianza = ctk.CTkProgressBar(
+            panel, width=220, height=12,
+            corner_radius=6,
+            progress_color="#00FF99",   # FRONT: color de la barra
+            fg_color="#333333"          # FRONT: color del fondo de la barra
+        )
+        self.barra_confianza.set(0)
+        self.barra_confianza.pack(pady=(4, 4))
+
+        self.lbl_confianza_pct = ctk.CTkLabel(
+            panel, text="0%",
+            font=ctk.CTkFont(size=11),
+            text_color="gray"
+        )
+        self.lbl_confianza_pct.pack(pady=(0, 15))
+        # ────────────────────────────────────────────
+
+        # separador visual
+        ctk.CTkFrame(panel, height=2, fg_color="#333333").pack(fill="x", padx=20, pady=(0, 15))
+
+        # historial de letras
         ctk.CTkLabel(
             panel, text="HISTORIAL",
             font=ctk.CTkFont(size=11, weight="bold"),
@@ -98,9 +128,9 @@ class TraductorLSC(ctk.CTk):
             text_color="#FFFFFF",
             wraplength=240
         )
-        self.lbl_historial.pack(pady=(5, 20))
+        self.lbl_historial.pack(pady=(5, 15))
 
-        # botón limpiar historial — ajustar estilo
+        # botón limpiar historial
         ctk.CTkButton(
             panel,
             text="Limpiar",
@@ -145,30 +175,40 @@ class TraductorLSC(ctk.CTk):
                         data_aux.append(lm.x)
                         data_aux.append(lm.y)
 
-                pred = self.model.predict([np.asarray(data_aux)])[0]
-                self.historial.append(pred)
+                # Predicción con umbral de confianza
+                pred_proba = self.model.predict_proba([np.asarray(data_aux)])[0]
+                confianza = max(pred_proba)
+                letra = self.model.classes_[np.argmax(pred_proba)]
+
+                self.confianza_actual = confianza  # para la barra visual
+
+                # Solo agregar al historial si supera el umbral
+                if confianza >= self.UMBRAL:
+                    self.historial.append(letra)
+
                 if len(self.historial) > self.frames_estabilidad:
                     self.historial.pop(0)
 
-                conteo = Counter(self.historial)
-                letra_freq, reps = conteo.most_common(1)[0]
-                if reps > self.frames_estabilidad * 0.7:
-                    self.letra_estable = letra_freq
-                    # Acumular en historial solo si cambió
-                    if letra_freq != self.ultima_letra_guardada:
-                        self.ultima_letra_guardada = letra_freq
-                        self.texto_acumulado += letra_freq
+                if self.historial:
+                    conteo = Counter(self.historial)
+                    letra_freq, reps = conteo.most_common(1)[0]
+                    if reps > self.frames_estabilidad * 0.7:
+                        self.letra_estable = letra_freq
+                        if letra_freq != self.ultima_letra_guardada:
+                            self.ultima_letra_guardada = letra_freq
+                            self.texto_acumulado += letra_freq
             else:
                 if self.historial:
                     self.historial.pop(0)
                 self.letra_estable = "..."
+                self.confianza_actual = 0.0
 
             self._current_frame = frame
 
     def _update_frame(self):
         if self._current_frame is not None:
             img = Image.fromarray(cv2.cvtColor(self._current_frame, cv2.COLOR_BGR2RGB))
-            #cambiar size para ajustar el tamaño del video en pantalla
+            # FRONT: cambiar size para ajustar el tamaño del video en pantalla
             imgtk = ctk.CTkImage(light_image=img, dark_image=img, size=(640, 480))
             self.cam_label.configure(image=imgtk)
             self.cam_label.image = imgtk
@@ -180,8 +220,21 @@ class TraductorLSC(ctk.CTk):
             else:
                 self.lbl_estado.configure(text="Seña detectada ✅", text_color="#00FF99")
 
+            # Actualizar barra de confianza
+            self.barra_confianza.set(self.confianza_actual)
+            pct = int(self.confianza_actual * 100)
+            self.lbl_confianza_pct.configure(text=f"{pct}%")
+
+            # Color de la barra según nivel de confianza
+            if self.confianza_actual >= self.UMBRAL:
+                self.barra_confianza.configure(progress_color="#00FF99")  # verde
+            elif self.confianza_actual >= 0.5:
+                self.barra_confianza.configure(progress_color="#FFAA00")  # amarillo
+            else:
+                self.barra_confianza.configure(progress_color="#FF4444")  # rojo
+
             # Actualizar historial visible
-            self.lbl_historial.configure(text=self.texto_acumulado[-30:])  # últimos 30 chars
+            self.lbl_historial.configure(text=self.texto_acumulado[-30:])
 
         self.after(30, self._update_frame)
 
