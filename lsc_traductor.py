@@ -143,6 +143,16 @@ class TraductorLSC(ctk.CTk):
     # ─────────────────────────────────────────────────
     # LÓGICA — NO tocar nada debajo de esta línea
     # ─────────────────────────────────────────────────
+
+    def _normalizar(self, hand_landmarks):
+        coords = [(lm.x, lm.y, lm.z) for lm in hand_landmarks.landmark]
+        base_x, base_y, base_z = coords[0]
+        coords = [(x - base_x, y - base_y, z - base_z) for x, y, z in coords]
+        max_val = max(max(abs(x), abs(y), abs(z)) for x, y, z in coords)
+        if max_val > 0:
+            coords = [(x/max_val, y/max_val, z/max_val) for x, y, z in coords]
+        return [v for triplet in coords for v in triplet]
+
     def _limpiar_historial(self):
         self.texto_acumulado = ""
         self.lbl_historial.configure(text="")
@@ -166,14 +176,11 @@ class TraductorLSC(ctk.CTk):
             results = self.hands.process(frame_rgb)
 
             if results.multi_hand_landmarks:
-                data_aux = []
-                for hand_landmarks in results.multi_hand_landmarks:
-                    self.mp_drawing.draw_landmarks(
-                        frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS
-                    )
-                    for lm in hand_landmarks.landmark:
-                        data_aux.append(lm.x)
-                        data_aux.append(lm.y)
+                hand_landmarks = results.multi_hand_landmarks[0]
+                self.mp_drawing.draw_landmarks(
+                    frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS
+                )
+                data_aux = self._normalizar(hand_landmarks)
 
                 # Predicción con umbral de confianza
                 pred_proba = self.model.predict_proba([np.asarray(data_aux)])[0]

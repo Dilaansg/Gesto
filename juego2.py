@@ -162,6 +162,15 @@ class JuegoLSC(ctk.CTk):
     # ──────────────────────────────────────
     # LÓGICA — NO tocar
     # ──────────────────────────────────────
+    def _normalizar(self, hand_landmarks):
+        coords = [(lm.x, lm.y, lm.z) for lm in hand_landmarks.landmark]
+        base_x, base_y, base_z = coords[0]
+        coords = [(x - base_x, y - base_y, z - base_z) for x, y, z in coords]
+        max_val = max(max(abs(x), abs(y), abs(z)) for x, y, z in coords)
+        if max_val > 0:
+            coords = [(x/max_val, y/max_val, z/max_val) for x, y, z in coords]
+        return [v for triplet in coords for v in triplet]
+
     def _confirmar(self):
         # Bloquear confirmación si la confianza es baja
         if self.confianza_actual < UMBRAL and self.letra_detectada != "...":
@@ -213,7 +222,7 @@ class JuegoLSC(ctk.CTk):
                 hand_landmarks = results.multi_hand_landmarks[0]
                 mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-                data_aux = [v for lm in hand_landmarks.landmark for v in (lm.x, lm.y)]
+                data_aux = self._normalizar(hand_landmarks)
 
                 pred_proba = model.predict_proba([np.asarray(data_aux)])[0]
                 confianza = max(pred_proba)
