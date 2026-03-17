@@ -48,7 +48,7 @@ class MenuPrincipal(ctk.CTk):
             self, text="Juego 2",
             font=ctk.CTkFont(size=16, weight="bold"),
             height=55, corner_radius=12,
-            command=lambda: self._lanzar("juego2.py", self.btn_j2, "Juego 2")
+            command=lambda: self._lanzar("juego2\juego2.py", self.btn_j2, "Juego 2")
         )
         self.btn_j2.pack(padx=80, fill="x", pady=8)
         #Hay que implementar nombres creativos para los juegos, por el momento lo dejo como juego1 y juego2.

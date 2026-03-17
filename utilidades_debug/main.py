@@ -1,6 +1,6 @@
 import lsc_traductor as tr
-import captura_abecedario as ca
-import entrenar_lsc as en
+import utilidades_debug.captura_abecedario as ca
+import utilidades_debug.entrenar_lsc as en
 def menu():
     while True:
         print("="*26)
