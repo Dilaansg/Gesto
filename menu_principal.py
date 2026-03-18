@@ -40,7 +40,7 @@ class MenuPrincipal(ctk.CTk):
             self, text="Juego 1",
             font=ctk.CTkFont(size=16, weight="bold"),
             height=55, corner_radius=12,
-            command=lambda: self._lanzar("juego1\juego_1\interfaz_juego1.py", self.btn_j1, "Juego 1")
+            command=lambda: self._lanzar("juego1\juego_1\juego1.py", self.btn_j1, "Juego 1")
         )
         self.btn_j1.pack(padx=80, fill="x", pady=8)
 
