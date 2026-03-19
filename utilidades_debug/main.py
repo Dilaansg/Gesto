@@ -1,4 +1,4 @@
-import lsc_traductor as tr
+import modulos.lsc_traductor as tr
 import utilidades_debug.captura_abecedario as ca
 import utilidades_debug.entrenar_lsc as en
 def menu():
