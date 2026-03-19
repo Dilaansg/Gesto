@@ -13,8 +13,8 @@ hands = mp_hands.Hands(
 )
 mp_draw = mp.solutions.drawing_utils
 
-ARCHIVO = "dataset_lsc_v2.csv"
-LETRAS = ["A", "B", "C", "D", "E", "I", "L", "O", "U", "V"]
+ARCHIVO = "modelo\dataset_lsc_v2.csv"
+LETRAS = ["F", "K", "M", "N", "P", "Q", "R", "T", "W", "X", "Y"]
 RAFAGA = 30  # capturas por ráfaga — puedes subir a 50 si tienes tiempo
 
 # ─────────────────────────────────────────
@@ -35,7 +35,8 @@ def normalizar(hand_landmarks):
 
 
 def capturar(letra):
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     contador = 0
 
     # Contar muestras existentes de esta letra
