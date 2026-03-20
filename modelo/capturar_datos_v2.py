@@ -14,7 +14,8 @@ hands = mp_hands.Hands(
 mp_draw = mp.solutions.drawing_utils
 
 ARCHIVO = "modelo\dataset_lsc_v2.csv"
-LETRAS = ["F", "K", "M", "N", "P", "Q", "R", "T", "W", "X", "Y"]
+LETRAS = ["A", "B", "C", "D", "E", "F", "I", "K", "L", 
+          "M", "N", "O", "P", "Q", "R", "T", "U", "V", "W", "X", "Y"]
 RAFAGA = 30  # capturas por ráfaga — puedes subir a 50 si tienes tiempo
 
 # ─────────────────────────────────────────

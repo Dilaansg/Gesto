@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 def ejecutar_entrenador():
     # 1. Cargar dataset v2 (normalizado)
-    df = pd.read_csv('modelo\dataset_lsc_v2.csv', header=None)
+    df = pd.read_csv('modelo\dataset_lsc_v3.csv', header=None)
     print(f"Total muestras: {len(df)}")
     print(f"Dimensiones del vector: {df.shape[1] - 1} features")  # debe ser 63
     print(f"\nMuestras por letra:\n{df.iloc[:, -1].value_counts().sort_index()}")
