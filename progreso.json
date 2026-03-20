@@ -1,0 +1,29 @@
+{
+  "seccion_actual": "intermedio_2",
+  "letras_completadas": [],
+  "secciones_completadas": [
+    "basico",
+    "intermedio_1"
+  ],
+  "puntaje_total": 140,
+  "lecciones_vistas": [
+    "leccion_A",
+    "leccion_E",
+    "leccion_I",
+    "leccion_O",
+    "leccion_U",
+    "leccion_B",
+    "leccion_C",
+    "leccion_D",
+    "leccion_F",
+    "leccion_L",
+    "leccion_V",
+    "leccion_K"
+  ],
+  "juegos_completados": [
+    "juego1_basico",
+    "juego2_basico",
+    "juego1_intermedio_1",
+    "juego2_intermedio_1"
+  ]
+}

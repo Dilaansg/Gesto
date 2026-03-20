@@ -38,6 +38,8 @@ PROXIMO = ["G", "H", "Ñ", "S", "Z"]
 PROGRESO_INICIAL = {
     "seccion_actual": "basico",
     "letras_completadas": [],
+    "lecciones_vistas": [],
+    "juegos_completados": [],
     "secciones_completadas": [],
     "puntaje_total": 0
 }
@@ -78,6 +80,17 @@ def completar_seccion(seccion):
     if idx + 1 < len(secciones):
         progreso["seccion_actual"] = secciones[idx + 1]
 
+    guardar(progreso)
+
+def completar_juego(seccion_id, numero_juego, puntos=20):
+    #comprobar si ya se completó el juego.
+    progreso = cargar()
+    if "juegos_completados" not in progreso:
+        progreso["juegos_completados"] = []
+    clave = f"juego{numero_juego}_{seccion_id}"
+    if clave not in progreso["juegos_completados"]:
+        progreso["juegos_completados"].append(clave)
+        progreso["puntaje_total"] += puntos
     guardar(progreso)
 
 
