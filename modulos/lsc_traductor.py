@@ -139,7 +139,7 @@ class TraductorLSC(ctk.CTkToplevel):
     def _start_camera(self):
         self.texto_acumulado = ""
         self.ultima_letra_guardada = ""
-        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW) #CAMBIAR POR 0 O 1 DEPENDIENDO SI NO INICIA LA CAMARA CORRECTAMENT
         threading.Thread(target=self._camera_loop, daemon=True).start()
         self._update_frame()
 

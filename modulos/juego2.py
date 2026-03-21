@@ -63,7 +63,7 @@ class BaseCamera:
             min_detection_confidence=0.8,
             min_tracking_confidence=0.7
         )
-        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW) #CAMBIAR POR 0 O 1 DEPENDIENDO SI NO INICIA LA CAMARA CORRECTAMENTE 
         threading.Thread(target=self._camera_loop, daemon=True).start()
 
     def _detener_camara(self):
