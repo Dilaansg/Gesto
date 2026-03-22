@@ -4,8 +4,19 @@
 # no hay que tocar esto, skip jajajaj
 import json
 import os
+import sys
 
-ARCHIVO = "progreso.json"
+def _ruta_datos(nombre_archivo):
+    """Devuelve la ruta correcta tanto en desarrollo como en el .exe"""
+    if getattr(sys, 'frozen', False):
+        # corriendo como .exe — guardar junto al ejecutable
+        base = os.path.dirname(sys.executable)
+    else:
+        # corriendo como script — guardar en la raíz del proyecto
+        base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, nombre_archivo)
+
+ARCHIVO = _ruta_datos("progreso.json")
 
 # estructura completa del camino de aprendizaje
 # el orden importa — es el orden en que se desbloquean

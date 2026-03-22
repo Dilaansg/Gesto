@@ -18,7 +18,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import progreso as p
 import config as cfg
 
-RUTA_MODELO = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modelo_lsc.p")
+def _get_ruta_modelo():
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, "modelo_lsc.p")
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modelo_lsc.p")
+
+RUTA_MODELO = _get_ruta_modelo()
 UMBRAL = 0.70
 FRAMES_ESTABILIDAD = 15
 ACIERTOS_PARA_PASAR = 4

@@ -12,6 +12,12 @@ Plataforma interactiva para el aprendizaje autónomo de la **Lengua de Señas Co
 2. Ejecuta `GESTO.exe`
 3. La primera vez puede tardar unos segundos en cargar — es normal
 
+## ⬇️ Descargar GESTO
+
+[**Descargar GESTO.exe (Windows)**](https://github.com/Dilaansg/Gesto/releases/latest)
+
+> No requiere instalar Python. Solo descarga y ejecuta.
+
 **Requisitos:**
 - Windows 10 o superior
 - Webcam (integrada o externa)

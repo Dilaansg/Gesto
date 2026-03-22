@@ -1,4 +1,4 @@
-# modulos/traductor.py
+# modulos/lsc_traductor.py
 import cv2
 import mediapipe as mp
 import pickle
@@ -13,9 +13,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config as cfg
 
-RUTA_MODELO = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modelo_lsc.p"
-)
+def _get_ruta_modelo():
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, "modelo_lsc.p")
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modelo_lsc.p")
+
+RUTA_MODELO = _get_ruta_modelo()
 
 class TraductorLSC(ctk.CTkToplevel):
     def __init__(self, master):

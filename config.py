@@ -7,7 +7,19 @@ import os
 import subprocess
 import sys
 
-ARCHIVO = "config.json"
+def _ruta_datos(nombre_archivo):
+    """Devuelve la ruta correcta tanto en desarrollo como en el .exe"""
+    if getattr(sys, 'frozen', False):
+        # corriendo como .exe — guardar junto al ejecutable
+        base = os.path.dirname(sys.executable)
+    else:
+        # corriendo como script — guardar en la raíz del proyecto
+        base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, nombre_archivo)
+
+ARCHIVO = _ruta_datos("config.json")
+
+
 
 CONFIG_INICIAL = {
     "camara": 1,              # índice de la cámara (0 = integrada, 1 = externa)
@@ -130,3 +142,4 @@ PALETA_CLARA = {
 
 def get_paleta():
     return PALETA_OSCURA if get_modo_oscuro() else PALETA_CLARA
+
