@@ -36,7 +36,7 @@ def normalizar(hand_landmarks):
 
 
 def capturar(letra):
-    cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     contador = 0
 
