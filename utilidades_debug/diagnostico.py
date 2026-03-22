@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 modelo = pickle.load(open('modelo_lsc.p', 'rb'))
 
 # 2. Cargar dataset y recrear el split exacto
-df = pd.read_csv('dataset_lsc.csv', header=None)
+df = pd.read_csv('modelo\dataset_lsc_v3.csv', header=None)
 X = df.iloc[:, :-1].values
 y = df.iloc[:, -1].values
 

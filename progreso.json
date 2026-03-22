@@ -1,11 +1,13 @@
 {
-  "seccion_actual": "intermedio_2",
+  "seccion_actual": "avanzado",
   "letras_completadas": [],
   "secciones_completadas": [
     "basico",
-    "intermedio_1"
+    "intermedio_1",
+    "intermedio_2",
+    "avanzado"
   ],
-  "puntaje_total": 140,
+  "puntaje_total": 265,
   "lecciones_vistas": [
     "leccion_A",
     "leccion_E",
@@ -18,12 +20,25 @@
     "leccion_F",
     "leccion_L",
     "leccion_V",
-    "leccion_K"
+    "leccion_K",
+    "leccion_R",
+    "leccion_T",
+    "leccion_Q",
+    "leccion_W",
+    "leccion_X",
+    "leccion_Y",
+    "leccion_M",
+    "leccion_N",
+    "leccion_P"
   ],
   "juegos_completados": [
     "juego1_basico",
     "juego2_basico",
     "juego1_intermedio_1",
-    "juego2_intermedio_1"
+    "juego2_intermedio_1",
+    "juego1_intermedio_2",
+    "juego2_intermedio_2",
+    "juego1_avanzado",
+    "juego2_avanzado"
   ]
 }

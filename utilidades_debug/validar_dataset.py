@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-def analizar_dataset(file_path='dataset_lsc.csv', minimo_muestras=300):
+def analizar_dataset(file_path='modelo\dataset_lsc_v3.csv', minimo_muestras=300):
     if not os.path.exists(file_path):
         print(f"No se encontró el archivo {file_path}")
         return
