@@ -1,22 +1,10 @@
-# Entornos virtuales
-lsc_env/
-venv/
-env/
-.git/
-.vscode/
-# Python cache
+build/
+dist/
+*.exe
+*.spec
+_debug_versiones_anteriores/
+matriz_confusion.png
+matriz_confusion_v2.png
 __pycache__/
 *.pyc
-
-# Datos y Modelos (Opcional: súbelos solo si no pesan más de 50MB)
-# dataset_lsc.csv
-# modelo_lsc.p
-
-# Archivos de sistema
-.DS_Store
-Thumbs.db
-
-dist/
-build/
-*.spec
-*.exe
+lsc_env/
