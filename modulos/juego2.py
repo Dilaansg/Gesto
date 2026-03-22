@@ -16,12 +16,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import progreso as p
+import config as cfg
 
-# ─────────────────────────────────────────
-# CONFIGURACIÓN — NO tocar
-# ─────────────────────────────────────────
 RUTA_MODELO = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modelo_lsc.p")
-UMBRAL = 0.80
+UMBRAL = 0.70
 FRAMES_ESTABILIDAD = 15
 ACIERTOS_PARA_PASAR = 4
 PREGUNTAS_PARA_PASAR = 5
@@ -30,10 +28,6 @@ model = pickle.load(open(RUTA_MODELO, 'rb'))
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 
-# ─────────────────────────────────────────
-# FUNCIÓN REUTILIZABLE DE NORMALIZACIÓN — NO tocar
-# debe ser idéntica a capturar_datos_v2.py
-# ─────────────────────────────────────────
 def normalizar(hand_landmarks):
     coords = [(lm.x, lm.y, lm.z) for lm in hand_landmarks.landmark]
     base_x, base_y, base_z = coords[0]
@@ -44,13 +38,7 @@ def normalizar(hand_landmarks):
     return [v for triplet in coords for v in triplet]
 
 
-# ─────────────────────────────────────────
-# CLASE BASE DE CÁMARA — NO tocar
-# MiniPractica y JuegoDos heredan de esta
-# ─────────────────────────────────────────
 class BaseCamera:
-    """Maneja la cámara y la detección en hilo separado."""
-
     def _iniciar_camara(self):
         self.corriendo = True
         self._current_frame = None
@@ -63,7 +51,7 @@ class BaseCamera:
             min_detection_confidence=0.8,
             min_tracking_confidence=0.7
         )
-        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW) #CAMBIAR POR 0 O 1 DEPENDIENDO SI NO INICIA LA CAMARA CORRECTAMENTE 
+        self.cap = cv2.VideoCapture(cfg.get_camara(), cv2.CAP_DSHOW)
         threading.Thread(target=self._camera_loop, daemon=True).start()
 
     def _detener_camara(self):
@@ -102,24 +90,24 @@ class BaseCamera:
 
 
 # ═══════════════════════════════════════════════════════
-# MINI PRÁCTICA — se abre encima de la lección
-# recibe una sola letra y valida que el usuario la haga
+# MINI PRÁCTICA
 # ═══════════════════════════════════════════════════════
 class MiniPractica(ctk.CTkToplevel, BaseCamera):
     def __init__(self, master, letra, on_exitoso):
         super().__init__(master)
         self.title(f"¡Inténtalo! — {letra}")
         ancho = self.winfo_screenwidth()
-        alto = self.winfo_screenheight()
+        alto  = self.winfo_screenheight()
         self.geometry(f"{int(ancho * 0.7)}x{int(alto * 0.68)}")
         self.resizable(False, False)
-        self.grab_set()  # bloquea la ventana de atrás
+        self.grab_set()
 
-        # ── estado (NO tocar) ──
-        self.letra = letra
-        self.on_exitoso = on_exitoso
-        self.validado = False
-        # ──────────────────────
+        C = cfg.get_paleta()
+        self.configure(fg_color=C["fondo"])
+
+        self.letra     = letra
+        self.on_exitoso= on_exitoso
+        self.validado  = False
 
         self._build_ui()
         self._iniciar_camara()
@@ -128,108 +116,143 @@ class MiniPractica(ctk.CTkToplevel, BaseCamera):
 
     # FRONT: modificar libremente
     def _build_ui(self):
-        # cámara izquierda  
-        self.ancho_cam = int(self.winfo_screenwidth() * 0.7 * 0.65)
-        self.alto_cam = int(self.ancho_cam * 0.75)
-        self.cam_label = ctk.CTkLabel(self, text="", width=self.ancho_cam, height=self.alto_cam)
-        self.cam_label.grid(row=0, column=0, rowspan=3, padx=15, pady=15)
+        C = cfg.get_paleta()
+
+        self.ancho_cam = int(self.winfo_screenwidth() * 0.7 * 0.62)
+        self.alto_cam  = int(self.ancho_cam * 0.72)
+        ancho_panel    = int(self.winfo_screenwidth() * 0.7 * 0.33)
+
+        # cámara con borde redondeado
+        cam_frame = ctk.CTkFrame(
+            self, corner_radius=16,
+            fg_color=C["fondo_card"],
+            border_width=1, border_color=C["borde"]
+        )
+        cam_frame.grid(row=0, column=0, padx=15, pady=15, sticky="n")
+
+        self.cam_label = ctk.CTkLabel(
+            cam_frame, text="",
+            width=self.ancho_cam, height=self.alto_cam
+        )
+        self.cam_label.pack(padx=8, pady=8)
+
         # panel derecho
-        ancho_panel = int(self.winfo_screenwidth() * 0.7 * 0.35)
-        panel = ctk.CTkFrame(self, width=ancho_panel, corner_radius=15)
-        panel.grid(row=0, column=1, rowspan=6, padx=(0, 15), pady=15, sticky="nsew")
+        panel = ctk.CTkFrame(
+            self, width=ancho_panel, corner_radius=16,
+            fg_color=C["fondo_card"],
+            border_width=1, border_color=C["borde"]
+        )
+        panel.grid(row=0, column=1, padx=(0, 15), pady=15, sticky="nsew")
         panel.grid_propagate(False)
 
         # FRONT: título
         ctk.CTkLabel(
             panel, text="¡Inténtalo!",
-            font=ctk.CTkFont(size=20, weight="bold")
-        ).pack(pady=(25, 5))
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color=C["texto_principal"]
+        ).pack(pady=(25, 4))
 
         ctk.CTkLabel(
             panel, text="Haz esta seña:",
-            font=ctk.CTkFont(size=13), text_color="gray"
+            font=ctk.CTkFont(size=13),
+            text_color=C["texto_secundario"]
         ).pack()
 
-        # FRONT: letra objetivo grande
+        # FRONT: recuadro letra objetivo
+        letra_frame = ctk.CTkFrame(
+            panel, width=90, height=90,
+            corner_radius=18,
+            fg_color=C["primario"], border_width=0
+        )
+        letra_frame.pack(pady=(12, 12))
+        letra_frame.pack_propagate(False)
         ctk.CTkLabel(
-            panel, text=self.letra,
-            font=ctk.CTkFont(size=90, weight="bold"),
-            text_color="#00CFFF"
-        ).pack(pady=(5, 10))
+            letra_frame, text=self.letra,
+            font=ctk.CTkFont(size=48, weight="bold"),
+            text_color="#ffffff"
+        ).place(relx=0.5, rely=0.5, anchor="center")
 
         # letra detectada
         ctk.CTkLabel(
             panel, text="DETECTADO",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="gray"
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=C["texto_secundario"]
         ).pack()
 
         self.lbl_detectado = ctk.CTkLabel(
             panel, text="...",
-            font=ctk.CTkFont(size=50, weight="bold"), text_color="#AAAAAA"
+            font=ctk.CTkFont(size=50, weight="bold"),
+            text_color=C["texto_secundario"]
         )
         self.lbl_detectado.pack(pady=(0, 8))
 
         # barra de confianza
         ctk.CTkLabel(
             panel, text="CONFIANZA",
-            font=ctk.CTkFont(size=11, weight="bold"), text_color="gray"
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=C["texto_secundario"]
         ).pack()
 
         self.barra_confianza = ctk.CTkProgressBar(
             panel, width=200, height=10, corner_radius=5,
-            progress_color="#00FF99", fg_color="#333333"
+            progress_color=C["completado"],
+            fg_color=C["fondo_muted"]
         )
         self.barra_confianza.set(0)
         self.barra_confianza.pack(pady=(4, 4))
 
         self.lbl_confianza_pct = ctk.CTkLabel(
             panel, text="0%",
-            font=ctk.CTkFont(size=11), text_color="gray"
+            font=ctk.CTkFont(size=11),
+            text_color=C["texto_secundario"]
         )
-        self.lbl_confianza_pct.pack(pady=(0, 15))
+        self.lbl_confianza_pct.pack(pady=(0, 12))
 
         # feedback
         self.lbl_feedback = ctk.CTkLabel(
             panel, text="",
-            font=ctk.CTkFont(size=13), wraplength=220
+            font=ctk.CTkFont(size=13), wraplength=220,
+            text_color=C["texto_principal"]
         )
-        self.lbl_feedback.pack(pady=(0, 10))
+        self.lbl_feedback.pack(pady=(0, 12))
 
-        # botón cerrar
+        # FRONT: botón cerrar
         ctk.CTkButton(
             panel, text="Cerrar",
-            font=ctk.CTkFont(size=13), height=36, corner_radius=8,
-            fg_color="transparent", border_width=1,
-            command=self._cerrar  # NO tocar
+            font=ctk.CTkFont(size=13), height=38, corner_radius=20,
+            fg_color="transparent",
+            border_width=1, border_color=C["borde"],
+            text_color=C["texto_secundario"],
+            hover_color=C["fondo_muted"],
+            command=self._cerrar
         ).pack(padx=20, fill="x")
 
-    # ── lógica — NO tocar ──
     def _update_frame(self):
         if not self.corriendo: return
+        C = cfg.get_paleta()
         if self._current_frame is not None:
             img = Image.fromarray(cv2.cvtColor(self._current_frame, cv2.COLOR_BGR2RGB))
             imgtk = ctk.CTkImage(light_image=img, dark_image=img, size=(self.ancho_cam, self.alto_cam))
             self.cam_label.configure(image=imgtk)
             self.cam_label.image = imgtk
 
-            color = "#00CFFF" if self.letra_detectada == self.letra else "#FFFFFF"
+            color = C["completado"] if self.letra_detectada == self.letra else C["texto_principal"]
             self.lbl_detectado.configure(text=self.letra_detectada, text_color=color)
-
             self.barra_confianza.set(self.confianza_actual)
             self.lbl_confianza_pct.configure(text=f"{int(self.confianza_actual * 100)}%")
 
             if self.confianza_actual >= UMBRAL:
-                self.barra_confianza.configure(progress_color="#00FF99")
+                self.barra_confianza.configure(progress_color=C["completado"])
             elif self.confianza_actual >= 0.5:
-                self.barra_confianza.configure(progress_color="#FFAA00")
+                self.barra_confianza.configure(progress_color=C["advertencia"])
             else:
-                self.barra_confianza.configure(progress_color="#FF4444")
+                self.barra_confianza.configure(progress_color=C["error"])
 
-            # detección exitosa automática
             if self.letra_detectada == self.letra and not self.validado:
                 self.validado = True
                 self.lbl_feedback.configure(
-                    text="¡Correcto! Muy bien 🎉", text_color="#00FF99"
+                    text="¡Correcto! Muy bien 🎉",
+                    text_color=C["completado"]
                 )
                 self.after(1500, self._exito)
 
@@ -246,7 +269,7 @@ class MiniPractica(ctk.CTkToplevel, BaseCamera):
 
 
 # ═══════════════════════════════════════════════════════
-# JUEGO 2 COMPLETO — usa todas las letras de la sección
+# JUEGO 2 COMPLETO
 # ═══════════════════════════════════════════════════════
 class JuegoDos(ctk.CTkToplevel, BaseCamera):
     def __init__(self, master, letras, seccion_id, letras_seccion, on_completado):
@@ -254,23 +277,23 @@ class JuegoDos(ctk.CTkToplevel, BaseCamera):
         self.title("Juego 2 — Haz la seña")
         self.update_idletasks()
         ancho = self.winfo_screenwidth()
-        alto = self.winfo_screenheight()
-        self.geometry(f"{int(ancho * 0.7)}x{int(alto * 0.68)}")
+        alto  = self.winfo_screenheight()
+        self.geometry(f"{int(ancho * 0.75)}x{int(alto * 0.85)}")
         self.resizable(False, False)
 
-        # ── estado (NO tocar) ──
-        self.letras = letras
-        self.seccion_id = seccion_id
-        self.letras_seccion = letras_seccion
+        C = cfg.get_paleta()
+        self.configure(fg_color=C["fondo"])
+        self.target_anterior = None #para que no muestre dos veces seguidas la misma letra.
+        self.letras        = letras
+        self.seccion_id    = seccion_id
+        self.letras_seccion= letras_seccion
         self.on_completado = on_completado
-        self.target = random.choice(self.letras)
-        self.puntaje = 0
-        self.intentos = 0
-        self.aciertos_ronda = 0
-        self.mensaje = "Haz el gesto y presiona CONFIRMAR"
-        self.color_mensaje = "#FFFFFF"
-        self._current_frame = None
-        # ──────────────────────
+        self.target        = random.choice(self.letras)
+        self.puntaje       = 0
+        self.intentos      = 0
+        self.aciertos_ronda= 0
+        self.mensaje       = "Haz el gesto y presiona ESPACIO"
+        self._current_frame= None
 
         self._build_ui()
         self._iniciar_camara()
@@ -279,106 +302,196 @@ class JuegoDos(ctk.CTkToplevel, BaseCamera):
 
     # FRONT: modificar libremente
     def _build_ui(self):
-        self.ancho_cam = int(self.winfo_screenwidth() * 0.7 * 0.60)
-        self.alto_cam = int(self.winfo_screenheight() * 0.68 * 0.90)
-        ancho_panel = int(self.winfo_screenwidth() * 0.7 * 0.35)
+        C = cfg.get_paleta()
 
-        self.cam_label = ctk.CTkLabel(self, text="", width=self.ancho_cam, height=self.alto_cam)
-        self.cam_label.grid(row=0, column=0, padx=10, pady=5, sticky="n")  # sticky="n" pega arriba
+        self.ancho_cam = int(self.winfo_screenwidth() * 0.75 * 0.58)
+        self.alto_cam  = int(self.winfo_screenheight() * 0.80 * 0.85)
+        ancho_panel    = int(self.winfo_screenwidth() * 0.75 * 0.36)
 
-        panel = ctk.CTkScrollableFrame(self, width=ancho_panel, corner_radius=15)
-        panel.grid(row=0, column=1, padx=(0, 10), pady=5, sticky="nsew")
-
+        self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
+        # cámara con borde redondeado
+        cam_frame = ctk.CTkFrame(
+            self, corner_radius=16,
+            fg_color=C["fondo_card"],
+            border_width=1, border_color=C["borde"]
+        )
+        cam_frame.grid(row=0, column=0, padx=15, pady=15, sticky="n")
+
+        self.cam_label = ctk.CTkLabel(
+            cam_frame, text="",
+            width=self.ancho_cam, height=self.alto_cam
+        )
+        self.cam_label.pack(padx=8, pady=(8, 4))
+
+        instr_frame = ctk.CTkFrame(
+            cam_frame,
+            corner_radius=10,
+            fg_color=C["fondo_muted"],
+            border_width=0
+        )
+        instr_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        ctk.CTkLabel(
+            instr_frame,
+            text="Muestra la mano y presiona ESPACIO",
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color=C["texto_principal"]
+        ).pack(pady=8)
+
+        # panel derecho scrolleable
+        panel = ctk.CTkScrollableFrame(
+            self, width=ancho_panel, corner_radius=16,
+            fg_color=C["fondo_card"],
+            scrollbar_button_color=C["borde_activo"],
+            scrollbar_button_hover_color=C["primario"]
+        )
+        panel.grid(row=0, column=1, padx=(0, 15), pady=15, sticky="nsew")
+
+        # FRONT: título
         ctk.CTkLabel(
             panel, text="Juego 2",
-            font=ctk.CTkFont(size=22, weight="bold")
-        ).pack(pady=(25, 5))
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color=C["texto_principal"]
+        ).pack(pady=(25, 4))
 
         ctk.CTkLabel(
             panel, text="Haz la seña correcta",
-            font=ctk.CTkFont(size=12), text_color="gray"
-        ).pack(pady=(0, 15))
+            font=ctk.CTkFont(size=12),
+            text_color=C["texto_secundario"]
+        ).pack(pady=(0, 16))
 
-        ctk.CTkLabel(panel, text="OBJETIVO",
-                     font=ctk.CTkFont(size=13, weight="bold"), text_color="gray").pack()
-        self.lbl_target = ctk.CTkLabel(
-            panel, text=self.target,
-            font=ctk.CTkFont(size=90, weight="bold"), text_color="#00CFFF"
+        # FRONT: letra objetivo en recuadro
+        ctk.CTkLabel(
+            panel, text="OBJETIVO",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color=C["texto_secundario"]
+        ).pack()
+
+        letra_frame = ctk.CTkFrame(
+            panel, width=100, height=100,
+            corner_radius=20,
+            fg_color=C["primario"], border_width=0
         )
-        self.lbl_target.pack(pady=(0, 5))
+        letra_frame.pack(pady=(8, 16))
+        letra_frame.pack_propagate(False)
+        self.lbl_target = ctk.CTkLabel(
+            letra_frame, text=self.target,
+            font=ctk.CTkFont(size=52, weight="bold"),
+            text_color="#ffffff"
+        )
+        self.lbl_target.place(relx=0.5, rely=0.5, anchor="center")
 
-        ctk.CTkLabel(panel, text="DETECTADO",
-                     font=ctk.CTkFont(size=13, weight="bold"), text_color="gray").pack()
+        # detectado
+        ctk.CTkLabel(
+            panel, text="DETECTADO",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color=C["texto_secundario"]
+        ).pack()
+
         self.lbl_detectado = ctk.CTkLabel(
             panel, text="...",
-            font=ctk.CTkFont(size=55, weight="bold"), text_color="#AAAAAA"
+            font=ctk.CTkFont(size=48, weight="bold"),
+            text_color=C["texto_secundario"]
         )
-        self.lbl_detectado.pack(pady=(0, 5))
+        self.lbl_detectado.pack(pady=(4, 12))
 
-        ctk.CTkLabel(panel, text="CONFIANZA",
-                     font=ctk.CTkFont(size=11, weight="bold"), text_color="gray").pack()
+        # barra confianza
+        ctk.CTkLabel(
+            panel, text="CONFIANZA",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=C["texto_secundario"]
+        ).pack()
+
         self.barra_confianza = ctk.CTkProgressBar(
-            panel, width=220, height=12, corner_radius=6,
-            progress_color="#00FF99", fg_color="#333333"
+            panel, height=10, corner_radius=5,
+            progress_color=C["completado"],
+            fg_color=C["fondo_muted"]
         )
         self.barra_confianza.set(0)
-        self.barra_confianza.pack(pady=(4, 2))
+        self.barra_confianza.pack(fill="x", padx=20, pady=(4, 2))
+
         self.lbl_confianza_pct = ctk.CTkLabel(
             panel, text="0%",
-            font=ctk.CTkFont(size=11), text_color="gray"
+            font=ctk.CTkFont(size=11),
+            text_color=C["texto_secundario"]
         )
-        self.lbl_confianza_pct.pack(pady=(0, 8))
+        self.lbl_confianza_pct.pack(pady=(0, 12))
 
+        # mensaje feedback
         self.lbl_mensaje = ctk.CTkLabel(
             panel, text=self.mensaje,
             font=ctk.CTkFont(size=13),
-            text_color=self.color_mensaje, wraplength=240
+            text_color=C["texto_secundario"], wraplength=240
         )
-        self.lbl_mensaje.pack(pady=(0, 10))
+        self.lbl_mensaje.pack(pady=(0, 12))
 
-        score_frame = ctk.CTkFrame(panel, corner_radius=10)
-        score_frame.pack(padx=20, fill="x", pady=(0, 13))
-        ctk.CTkLabel(score_frame, text="✅ Correctas",
-                     font=ctk.CTkFont(size=12)).grid(row=0, column=0, padx=20, pady=8)
-        ctk.CTkLabel(score_frame, text="📝 Intentos",
-                     font=ctk.CTkFont(size=12)).grid(row=0, column=1, padx=20, pady=8)
+        # puntaje
+        score_frame = ctk.CTkFrame(
+            panel, corner_radius=12,
+            fg_color=C["fondo_muted"],
+            border_width=0
+        )
+        score_frame.pack(padx=20, fill="x", pady=(0, 16))
+
+        ctk.CTkLabel(
+            score_frame, text="✅ Correctas",
+            font=ctk.CTkFont(size=12),
+            text_color=C["texto_secundario"]
+        ).grid(row=0, column=0, padx=20, pady=8)
+
+        ctk.CTkLabel(
+            score_frame, text="📝 Intentos",
+            font=ctk.CTkFont(size=12),
+            text_color=C["texto_secundario"]
+        ).grid(row=0, column=1, padx=20, pady=8)
+
         self.lbl_puntaje = ctk.CTkLabel(
             score_frame, text="0",
-            font=ctk.CTkFont(size=22, weight="bold"), text_color="#00FF99"
+            font=ctk.CTkFont(size=24, weight="bold"),
+            text_color=C["completado"]
         )
-        self.lbl_puntaje.grid(row=1, column=0, padx=20, pady=(0, 10))
+        self.lbl_puntaje.grid(row=1, column=0, padx=20, pady=(0, 12))
+
         self.lbl_intentos = ctk.CTkLabel(
             score_frame, text="0",
-            font=ctk.CTkFont(size=22, weight="bold"), text_color="#FFAA00"
+            font=ctk.CTkFont(size=24, weight="bold"),
+            text_color=C["advertencia"]
         )
-        self.lbl_intentos.grid(row=1, column=1, padx=20, pady=(0, 10))
+        self.lbl_intentos.grid(row=1, column=1, padx=20, pady=(0, 12))
 
-        # NO tocar command=
+        # FRONT: botones — NO tocar command=
         ctk.CTkButton(
             panel, text="✔ CONFIRMAR",
             font=ctk.CTkFont(size=14, weight="bold"),
-            height=45, corner_radius=10,
+            height=46, corner_radius=22,
+            fg_color=C["primario"],
+            text_color="#ffffff",
+            hover_color=C["acento"],
             command=self._confirmar
         ).pack(padx=20, fill="x", pady=(0, 10))
 
         ctk.CTkButton(
             panel, text="⏭ Saltar letra",
-            font=ctk.CTkFont(size=13), height=38, corner_radius=10,
-            fg_color="transparent", border_width=2,
+            font=ctk.CTkFont(size=13), height=38, corner_radius=22,
+            fg_color="transparent",
+            border_width=1, border_color=C["borde"],
+            text_color=C["texto_secundario"],
+            hover_color=C["fondo_muted"],
             command=self._saltar
         ).pack(padx=20, fill="x")
 
-        self.bind("<Return>", lambda e: self._confirmar())
+        self.bind("<space>", lambda e: self._confirmar())
 
     # ── lógica — NO tocar ──
     def _confirmar(self):
+        C = cfg.get_paleta()
         if self.confianza_actual < UMBRAL and self.letra_detectada != "...":
             self.lbl_mensaje.configure(
                 text="⚠️ Seña poco clara, ajusta la mano",
-                text_color="#FFAA00"
+                text_color=C["advertencia"]
             )
             return
 
@@ -386,48 +499,50 @@ class JuegoDos(ctk.CTkToplevel, BaseCamera):
         if self.letra_detectada == self.target:
             self.puntaje += 1
             self.aciertos_ronda += 1
-            self.mensaje = "¡CORRECTO! 🎉"
-            self.color_mensaje = "#00FF99"
-            self.target = random.choice(self.letras)
+            self.lbl_mensaje.configure(text="¡CORRECTO! 🎉", text_color=C["completado"])
+            opciones = [l for l in self.letras if l != self.target] #para que no muestre la misma anterior
+            self.target_anterior = self.target
+            self.target = random.choice(opciones)
+            self.lbl_target.configure(text=self.target)
             self.lbl_target.configure(text=self.target)
             self.historial.clear()
-
-            # verificar si completó la ronda
             if self.intentos >= PREGUNTAS_PARA_PASAR:
                 self.after(800, self._fin_ronda)
                 return
         else:
-            self.mensaje = "Incorrecto ❌"
-            self.color_mensaje = "#FF4444"
-
+            self.lbl_mensaje.configure(text="Incorrecto ❌", text_color=C["error"])
             if self.intentos >= PREGUNTAS_PARA_PASAR:
                 self.after(800, self._fin_ronda)
                 return
 
-        self.lbl_mensaje.configure(text=self.mensaje, text_color=self.color_mensaje)
         self.lbl_puntaje.configure(text=str(self.puntaje))
         self.lbl_intentos.configure(text=str(self.intentos))
 
     def _saltar(self):
-        self.target = random.choice(self.letras)
+        opciones = [l for l in self.letras if l != self.target]
+        self.target_anterior = self.target
+        self.target = random.choice(opciones)
         self.lbl_target.configure(text=self.target)
-        self.lbl_mensaje.configure(text="Letra cambiada", text_color="#FFFFFF")
+        self.lbl_target.configure(text=self.target)
+        C = cfg.get_paleta()
+        self.lbl_mensaje.configure(text="Letra cambiada", text_color=C["texto_secundario"])
         self.historial.clear()
 
     def _fin_ronda(self):
+        C = cfg.get_paleta()
         aprobado = self.aciertos_ronda >= ACIERTOS_PARA_PASAR
         if aprobado:
             p.completar_juego(self.seccion_id, 2)
             p.completar_seccion(self.seccion_id)
             self.lbl_mensaje.configure(
-                text=f"¡Sección completada! {self.aciertos_ronda}/{PREGUNTAS_PARA_PASAR}",
-                text_color="#00FF99"
+                text=f"¡Sección completada! 🎉",
+                text_color=C["completado"]
             )
             self.after(2000, self._cerrar)
         else:
             self.lbl_mensaje.configure(
                 text=f"Necesitas {ACIERTOS_PARA_PASAR}/{PREGUNTAS_PARA_PASAR} — intentá de nuevo",
-                text_color="#FF4444"
+                text_color=C["error"]
             )
             self.aciertos_ronda = 0
             self.intentos = 0
@@ -437,23 +552,24 @@ class JuegoDos(ctk.CTkToplevel, BaseCamera):
 
     def _update_frame(self):
         if not self.corriendo: return
+        C = cfg.get_paleta()
         if self._current_frame is not None:
             img = Image.fromarray(cv2.cvtColor(self._current_frame, cv2.COLOR_BGR2RGB))
             imgtk = ctk.CTkImage(light_image=img, dark_image=img, size=(self.ancho_cam, self.alto_cam))
             self.cam_label.configure(image=imgtk)
             self.cam_label.image = imgtk
 
-            color = "#00CFFF" if self.letra_detectada == self.target else "#FFFFFF"
+            color = C["completado"] if self.letra_detectada == self.target else C["texto_principal"]
             self.lbl_detectado.configure(text=self.letra_detectada, text_color=color)
             self.barra_confianza.set(self.confianza_actual)
             self.lbl_confianza_pct.configure(text=f"{int(self.confianza_actual * 100)}%")
 
             if self.confianza_actual >= UMBRAL:
-                self.barra_confianza.configure(progress_color="#00FF99")
+                self.barra_confianza.configure(progress_color=C["completado"])
             elif self.confianza_actual >= 0.5:
-                self.barra_confianza.configure(progress_color="#FFAA00")
+                self.barra_confianza.configure(progress_color=C["advertencia"])
             else:
-                self.barra_confianza.configure(progress_color="#FF4444")
+                self.barra_confianza.configure(progress_color=C["error"])
 
         self.after(30, self._update_frame)
 

@@ -10,6 +10,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import progreso as p
+import config as cfg
 
 RUTA_IMAGENES = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -22,124 +23,211 @@ class Leccion(ctk.CTkToplevel):
         self.title(f"Lección — Letra {letra}")
         self.update_idletasks()
         ancho = self.winfo_screenwidth()
-        alto = self.winfo_screenheight()
-        self.geometry(f"{int(ancho * 0.5)}x{int(alto * 0.70)}")
+        alto  = self.winfo_screenheight()
+        self.geometry(f"{int(ancho * 0.55)}x{int(alto * 0.85)}")
         self.resizable(False, False)
 
         # ── estado (NO tocar) ──
-        self.letra = letra
-        self.seccion_id = seccion_id
+        self.letra          = letra
+        self.seccion_id     = seccion_id
         self.letras_seccion = letras_seccion
-        self.on_completado = on_completado
-        self.mini_exitoso = False
+        self.on_completado  = on_completado
+        self.mini_exitoso   = False
         # ──────────────────────
 
+        C = cfg.get_paleta()
+        self.configure(fg_color=C["fondo"])
+
         self._build_ui()
-        self._marcar_vista()  # marcar como vista al abrir
+        self._marcar_vista()
         self.protocol("WM_DELETE_WINDOW", self._cerrar)
 
     # ─────────────────────────────────────────────────
     # INTERFAZ — FRONT: modificar libremente
     # ─────────────────────────────────────────────────
     def _build_ui(self):
-        # encabezado con progreso de la sección
-        header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(20, 0))
+        C = cfg.get_paleta()
 
+        pos   = self.letras_seccion.index(self.letra) + 1
+        total = len(self.letras_seccion)
+
+        # ── encabezado ──────────────────────────────
+        header = ctk.CTkFrame(self, fg_color=C["fondo"])
+        header.pack(fill="x", padx=24, pady=(18, 0))
+
+        # FRONT: nombre de la sección
         ctk.CTkLabel(
-            header, text=f"Sección: {p.CAMINO[self.seccion_id]['nombre']}",
-            font=ctk.CTkFont(size=13), text_color="gray"
+            header,
+            text=f"{p.CAMINO[self.seccion_id]['nombre']}",
+            font=ctk.CTkFont(size=13),
+            text_color=C["texto_secundario"]
         ).pack(side="left")
 
-        pos = self.letras_seccion.index(self.letra) + 1
-        total = len(self.letras_seccion)
+        # FRONT: posición en la sección
         ctk.CTkLabel(
-            header, text=f"Letra {pos} de {total}",
-            font=ctk.CTkFont(size=13), text_color="gray"
+            header,
+            text=f"{pos} / {total}",
+            font=ctk.CTkFont(size=13),
+            text_color=C["texto_secundario"]
         ).pack(side="right")
 
-        # FRONT: letra grande
+        # ── barra de progreso de la sección ─────────
+        # FRONT: cambiar colores de la barra
+        barra_prog = ctk.CTkProgressBar(
+            self, height=6, corner_radius=4,
+            progress_color=C["primario"],
+            fg_color=C["fondo_muted"]
+        )
+        barra_prog.set(pos / total)
+        barra_prog.pack(fill="x", padx=24, pady=(8, 16))
+
+        # ── letra centrada arriba ────────────────────
+        letra_frame = ctk.CTkFrame(
+            self,
+            width=90, height=90,
+            corner_radius=18,
+            fg_color=C["primario"],
+            border_width=0
+        )
+        letra_frame.pack(pady=(0, 16))
+        letra_frame.pack_propagate(False)
         ctk.CTkLabel(
-            self, text=self.letra,
-            font=ctk.CTkFont(size=72, weight="bold"),
-            text_color="#00CFFF"
-        ).pack(pady=(10, 5))
+            letra_frame, text=self.letra,
+            font=ctk.CTkFont(size=48, weight="bold"),
+            text_color="#ffffff"
+        ).place(relx=0.5, rely=0.5, anchor="center")
 
-        # contenido principal — imagen + explicación lado a lado
-        contenido = ctk.CTkFrame(self, fg_color="transparent")
-        contenido.pack(fill="both", expand=True, padx=20, pady=5)
+        ctk.CTkLabel(
+            self,
+            text="¿Cómo hacer esta seña?",
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color=C["texto_principal"]
+        ).pack(pady=(0, 16))
 
-        # imagen de la seña
-        self.lbl_imagen = ctk.CTkLabel(contenido, text="", width=220, height=220)
-        self.lbl_imagen.pack(side="left", padx=(0, 20))
+        # ── contenido central: imagen izquierda, recuadros derecha ──
+        contenido = ctk.CTkFrame(self, fg_color=C["fondo"])
+        contenido.pack(fill="both", expand=True, padx=24, pady=(0, 8))
+
+        # columna izquierda — imagen con borde redondeado
+        col_izq = ctk.CTkFrame(
+            contenido,
+            corner_radius=16,
+            fg_color=C["fondo_card"],
+            border_width=2,
+            border_color=C["borde_activo"]
+        )
+        col_izq.pack(side="left", padx=(0, 16), pady=4, fill="y")
+
+        self.lbl_imagen = ctk.CTkLabel(col_izq, text="", width=260, height=280)
+        self.lbl_imagen.pack(padx=16, pady=16)
         self._cargar_imagen()
 
-        # panel de explicación
-        panel = ctk.CTkFrame(contenido, fg_color="transparent")
-        panel.pack(side="left", fill="both", expand=True)
+        # columna derecha — instrucciones + tip apilados
+        col_der = ctk.CTkFrame(contenido, fg_color=C["fondo"], width=370)
+        col_der.pack(side="left", fill="y", pady=4)
+        col_der.pack_propagate(False)
+
+        # recuadro instrucciones
+        frame_instrucciones = ctk.CTkFrame(
+            col_der,
+            corner_radius=14,
+            fg_color=C["fondo_card"],
+            border_width=2,
+            border_color=C["borde"]
+        )
+        frame_instrucciones.pack(fill="both", expand= True, pady=(0, 12))
 
         ctk.CTkLabel(
-            panel, text="Cómo hacer esta seña",
-            font=ctk.CTkFont(size=16, weight="bold"), anchor="w"
-        ).pack(anchor="w", pady=(0, 8))
+            frame_instrucciones,
+            text="Instrucciones",
+            font=ctk.CTkFont(size=17, weight="bold"),
+            text_color=C["texto_principal"], anchor="w"
+        ).pack(anchor="w", padx=16, pady=(14, 6))
 
-        descripcion = self._get_descripcion(self.letra)
         ctk.CTkLabel(
-            panel, text=descripcion,
-            font=ctk.CTkFont(size=13), text_color="gray",
-            wraplength=280, justify="left", anchor="w"
-        ).pack(anchor="w")
+            frame_instrucciones,
+            text=self._get_descripcion(self.letra),
+            font=ctk.CTkFont(size=15),
+            text_color=C["texto_secundario"],
+            wraplength=240, justify="left", anchor="w"
+        ).pack(anchor="w", padx=16, pady=(0, 14))
 
-        # FRONT: tip
+        # recuadro tip
+        frame_tip = ctk.CTkFrame(
+            col_der,
+            corner_radius=14,
+            fg_color="#FFCF4B",
+            border_width=2,
+            border_color=C["advertencia"],
+            height=40
+        )
+        frame_tip.pack(fill="x")
+
+        tip_header = ctk.CTkFrame(frame_tip, fg_color="transparent")
+        tip_header.pack(fill="x", padx=16, pady=(12, 4))
+
         ctk.CTkLabel(
-            panel, text="Tip",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#FFAA00", anchor="w"
-        ).pack(anchor="w", pady=(12, 4))
-
-        tip = self._get_tip(self.letra)
-        ctk.CTkLabel(
-            panel, text=tip,
-            font=ctk.CTkFont(size=12), text_color="gray",
-            wraplength=280, justify="left", anchor="w"
-        ).pack(anchor="w")
-
-        # separador
-        ctk.CTkFrame(self, height=1, fg_color="#333333").pack(fill="x", padx=20, pady=(10, 0))
-
-        # botones de navegación
-        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        btn_frame.pack(fill="x", padx=20, pady=12)
-
-        ctk.CTkButton(
-            btn_frame, text="← Volver",
-            font=ctk.CTkFont(size=13),
-            width=100, height=38, corner_radius=8,
-            fg_color="transparent", border_width=1,
-            command=self._cerrar  # NO tocar
+            tip_header, text="⚠️ Consejo",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=C["texto_principal"]
         ).pack(side="left")
 
-        # botón INTÉNTALO — abre mini práctica con cámara
-        # FRONT: cambiar estilo
+        ctk.CTkLabel(
+            frame_tip,
+            text=self._get_tip(self.letra),
+            font=ctk.CTkFont(size=12),
+            text_color=C["texto_principal"],
+            wraplength=240, justify="left", anchor="w"
+        ).pack(anchor="w", padx=16, pady=(0, 14))
+
+        # ── barra inferior con botones ───────────────
+        ctk.CTkFrame(
+            self, height=1, fg_color=C["borde"]
+        ).pack(fill="x", side = "bottom")
+
+        btn_frame = ctk.CTkFrame(self, fg_color=C["fondo"])
+        btn_frame.pack(side="bottom", fill="x", padx=24, pady=14)
+
+        # columna izquierda — botón anterior
+        idx_actual   = self.letras_seccion.index(self.letra)
+        hay_anterior = idx_actual > 0
+
+        ctk.CTkButton(
+            btn_frame, text="‹  Anterior",
+            font=ctk.CTkFont(size=13),
+            width=130, height=48, corner_radius=22,
+            fg_color="transparent",
+            border_width=1, border_color=C["borde"],
+            text_color=C["texto_secundario"] if hay_anterior else C["texto_bloqueado"],
+            hover_color=C["fondo_muted"],
+            state="normal" if hay_anterior else "disabled",
+            command=self._anterior  # NO tocar
+        ).pack(side="left")
+
+        # centro — botón INTÉNTALO
         self.btn_intentalo = ctk.CTkButton(
-            btn_frame, text="¡Inténtalo! 📷",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            width=150, height=38, corner_radius=8,
-            fg_color="#FFAA00", text_color="black",
+            btn_frame, text="¡Inténtalo!",
+            font=ctk.CTkFont(size=15, weight="bold"),
+            height=48, corner_radius=22, width=200,
+            fg_color=C["completado"],
+            text_color="#ffffff",
+            hover_color=C["primario"],
             command=self._abrir_mini_practica  # NO tocar
         )
-        self.btn_intentalo.pack(side="right", padx=(10, 0))
+        self.btn_intentalo.pack(side="left", expand=True)
 
-        # botón siguiente letra — siempre visible
-        # FRONT: cambiar estilo
-        self.btn_siguiente = ctk.CTkButton(
-            btn_frame, text="Siguiente →",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            height=38, corner_radius=8,
+        # derecha — botón siguiente
+        hay_siguiente = idx_actual + 1 < len(self.letras_seccion)
+        texto_sig = "Siguiente  ›" if hay_siguiente else "Finalizar  ✓"
+        ctk.CTkButton(
+            btn_frame, text=texto_sig,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            width=130, height=48, corner_radius=22,
+            fg_color=C["primario"],
+            text_color="#ffffff",
+            hover_color=C["acento"],
             command=self._siguiente  # NO tocar
-        )
-        self.btn_siguiente.pack(side="right")
-
+        ).pack(side="right")
     # ─────────────────────────────────────────────────
     # LÓGICA — NO tocar
     # ─────────────────────────────────────────────────
@@ -150,7 +238,7 @@ class Leccion(ctk.CTkToplevel):
             progreso["lecciones_vistas"] = []
         if clave not in progreso["lecciones_vistas"]:
             progreso["lecciones_vistas"].append(clave)
-            progreso["puntaje_total"] += 5  # puntos por ver la lección
+            progreso["puntaje_total"] += 5
             p.guardar(progreso)
 
     def _abrir_mini_practica(self):
@@ -163,25 +251,33 @@ class Leccion(ctk.CTkToplevel):
 
     def _mini_practica_exitosa(self):
         self.mini_exitoso = True
-        # FRONT: cambiar estilo del botón cuando el usuario ya lo logró
+        C = cfg.get_paleta()
         self.btn_intentalo.configure(
             text="¡Logrado! ✓",
-            fg_color="#00AA55",
+            fg_color=C["completado"],
             text_color="white",
             state="disabled"
         )
 
-    def _siguiente(self):
-        idx_actual = self.letras_seccion.index(self.letra)
-        hay_siguiente = idx_actual + 1 < len(self.letras_seccion)
+    def _anterior(self):
+        idx = self.letras_seccion.index(self.letra)
+        if idx > 0:
+            self.letra = self.letras_seccion[idx - 1]
+            self.title(f"Lección — Letra {self.letra}")
+            self.mini_exitoso = False
+            self._marcar_vista()
+            for widget in self.winfo_children():
+                widget.destroy()
+            self._build_ui()
 
+    def _siguiente(self):
+        idx_actual    = self.letras_seccion.index(self.letra)
+        hay_siguiente = idx_actual + 1 < len(self.letras_seccion)
         if hay_siguiente:
-            # actualizar estado
             self.letra = self.letras_seccion[idx_actual + 1]
             self.title(f"Lección — Letra {self.letra}")
             self.mini_exitoso = False
             self._marcar_vista()
-            # limpiar y reconstruir sin destruir la ventana
             for widget in self.winfo_children():
                 widget.destroy()
             self._build_ui()
@@ -208,13 +304,13 @@ class Leccion(ctk.CTkToplevel):
             )
             return
         ruta = os.path.join(ruta_carpeta, random.choice(imagenes))
-        img = Image.open(ruta).resize((220, 220))
-        img_ctk = ctk.CTkImage(light_image=img, dark_image=img, size=(220, 220))
+        img  = Image.open(ruta).resize((260, 280))
+        img_ctk = ctk.CTkImage(light_image=img, dark_image=img, size=(260, 280))
         self.lbl_imagen.configure(image=img_ctk)
         self.lbl_imagen.image = img_ctk
 
     # ─────────────────────────────────────────────────
-    # CONTENIDO — FRONT: pueden ampliar las descripciones o mejorarlas
+    # CONTENIDO — FRONT: ampliar descripciones y tips
     # ─────────────────────────────────────────────────
     def _get_descripcion(self, letra):
         descripciones = {
@@ -243,7 +339,7 @@ class Leccion(ctk.CTkToplevel):
         return descripciones.get(letra, "Observa la imagen y replica la posición de la mano.")
 
     def _get_tip(self, letra):
-        tips = { #diccionario para tips
+        tips = {
             "A": "Asegúrate de que el pulgar no quede escondido detrás del puño.",
             "B": "Los cuatro dedos deben estar completamente extendidos y juntos.",
             "C": "La curvatura debe ser suave, no demasiado cerrada ni abierta.",
@@ -271,7 +367,7 @@ class Leccion(ctk.CTkToplevel):
 
 if __name__ == "__main__":
     raiz = ctk.CTk()
-    raiz.withdraw()  # ocultar ventana raíz
+    raiz.withdraw()
     def dummy(): pass
     app = Leccion(
         master=raiz,
