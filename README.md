@@ -179,5 +179,10 @@ Ingeniería de Sistemas — 2026
 - Daniel Ortíz
 
 ---
+## Herramientas de desarrollo
+
+La lógica avanzada, arquitectura de módulos, pipeline de detección con normalización,
+integración de cámara en hilos separados y depuración/optimización general
+de la aplicación fueron desarrollados con asistencia de **Claude (Anthropic)**.
 
 *Última actualización: 22 de Marzo 2026*
