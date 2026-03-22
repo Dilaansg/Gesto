@@ -22,9 +22,9 @@ ARCHIVO = _ruta_datos("config.json")
 
 
 CONFIG_INICIAL = {
-    "camara": 1,              # índice de la cámara (0 = integrada, 1 = externa)
+    "camara": 0,              # índice de la cámara (0 = integrada, 1 = externa)
     "modo_oscuro": True,      # tema de la app
-    "version": "0.7 ALPHA"
+    "version": "1.0.0"
 }
 
 def cargar():
@@ -33,6 +33,10 @@ def cargar():
         guardar(CONFIG_INICIAL.copy())
     with open(ARCHIVO, "r", encoding="utf-8") as f:
         return json.load(f)
+    if "camara" not in config:
+        config["camara"] = 0
+        guardar(config)
+    return config
 
 def guardar(config):
     """Guarda la configuración."""

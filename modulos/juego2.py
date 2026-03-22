@@ -57,6 +57,8 @@ class BaseCamera:
             min_tracking_confidence=0.7
         )
         self.cap = cv2.VideoCapture(cfg.get_camara(), cv2.CAP_DSHOW)
+        if not self.cap.isOpened():
+            self.cap = cv2.VideoCapture(cfg.get_camara())
         threading.Thread(target=self._camera_loop, daemon=True).start()
 
     def _detener_camara(self):

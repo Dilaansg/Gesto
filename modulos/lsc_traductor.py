@@ -231,6 +231,8 @@ class TraductorLSC(ctk.CTkToplevel):
         self.texto_acumulado = ""
         self.ultima_letra_guardada = ""
         self.cap = cv2.VideoCapture(cfg.get_camara(), cv2.CAP_DSHOW)
+        if not self.cap.isOpened():
+            self.cap = cv2.VideoCapture(cfg.get_camara())
         threading.Thread(target=self._camera_loop, daemon=True).start()
         self._update_frame()
 

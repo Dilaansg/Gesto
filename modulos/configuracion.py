@@ -13,7 +13,7 @@ import config as cfg
 import progreso as p
 
 INTEGRANTES = [
-    "DILAN OSORIO",   # FRONT: reemplazar con nombres reales
+    "DILAN OSORIO 🗲", 
     "JHON OVIEDO",
     "ANA OCHOA",
     "JUAN MARTÍNEZ",
